@@ -18,13 +18,14 @@ input, textarea{flex:1;resize:vertical;padding:10px;border-radius:8px;border:1px
 input::placeholder, textarea::placeholder{color:var(--muted)}
 button{background:var(--accent);border:0;padding:10px 14px;border-radius:8px;color:#042027;font-weight:600;cursor:pointer}
 button:active{transform:translateY(1px)}
-.feed{flex:1;overflow-y:auto;margin-top:12px;display:flex;flex-direction:column-reverse}
+.feed{flex:1;overflow-y:auto;margin-top:12px;display:flex;flex-direction:column}
 .message{position:relative;min-width:260px;max-width:86%;border-radius:12px;padding:12px 14px;border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(6px);box-shadow:0 8px 20px rgba(2,6,23,0.6);transition:all 0.4s ease;margin-bottom:8px}
 .message .meta{font-size:12px;color:var(--muted);margin-bottom:6px;transition:all 0.4s ease;}
 .message .text{font-size:15px;line-height:1.3;color:#ecfeff;transition:all 0.4s ease;}
 .enter-anim{animation:floatIn 900ms cubic-bezier(.2,.9,.3,1) forwards}
 @keyframes floatIn{0%{opacity:0;transform:translateY(30px) scale(0.98)}60%{opacity:1;transform:translateY(-14px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
 footer{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
+.clear-all{background:#ef4444;color:white;margin-top:8px;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;font-weight:600}
 </style>
 </head>
 <body>
@@ -33,7 +34,10 @@ footer{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
   <h1>กระดานข้อความสาธารณะ</h1>
   <p>พิมพ์ชื่อและข้อความด้านล่างแล้วกด "ส่ง" — ข้อความจะลอยขึ้นด้านบนแบบเรียลไทม์</p>
 </header>
+
 <div class="feed" id="feed" aria-live="polite"></div>
+<button class="clear-all" id="clearAll">ล้างข้อความทั้งหมด</button>
+
 <div class="composer">
   <div class="input-row">
     <input id="name" type="text" placeholder="ชื่อของคุณ (ไม่บังคับ)" maxlength="50">
@@ -69,6 +73,7 @@ const feed = document.getElementById('feed');
 const txt = document.getElementById('txt');
 const nameInput = document.getElementById('name');
 const send = document.getElementById('send');
+const clearAll = document.getElementById('clearAll');
 
 function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
@@ -91,11 +96,12 @@ function renderMessages(messages){
 onValue(query(msgRef, limitToLast(50)), snapshot=>{
   const data = snapshot.val();
   if(data){
-    const msgs = Object.entries(data).map(([key,val])=>({...val,key})).reverse();
+    const msgs = Object.entries(data).map(([key,val])=>({...val,key})).sort((a,b)=>b.t - a.t); // ล่าสุดบน
     renderMessages(msgs);
-  }
+  } else feed.innerHTML='';
 });
 
+// ส่งข้อความ
 function sendMessage(){
   const v = txt.value.trim();
   if(!v) return txt.focus();
@@ -103,9 +109,13 @@ function sendMessage(){
   push(msgRef,{name:n,text:v,t:Date.now()});
   txt.value='';
 }
-
 send.addEventListener('click', sendMessage);
 txt.addEventListener('keydown', e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))sendMessage();});
+
+// ล้างข้อความทั้งหมดแบบเรียลไทม์
+clearAll.addEventListener('click',()=>{
+  if(confirm("คุณต้องการล้างข้อความทั้งหมดหรือไม่?")) remove(msgRef);
+});
 </script>
 </body>
 </html>
