@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>แอดมินกระดานข้อความ</title>
+<title>Admin Dashboard</title>
 <style>
 body{margin:0;padding:0;font-family:Inter, system-ui, -apple-system,"Segoe UI",Roboto,Noto Sans,Helvetica,Arial;background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white}
 .app{width:90%;max-width:900px;margin:20px auto;padding:16px;background:rgba(255,255,255,0.03);border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
@@ -55,14 +55,24 @@ onValue(msgRef,snapshot=>{
       tr.innerHTML = `<td>${new Date(val.t).toLocaleString()}</td>
                       <td>${val.name||'Anonymous'}</td>
                       <td>${val.text}</td>
-                      <td><button class="block" onclick="deleteMessage('${key}')">ลบ</button></td>`;
+                      <td>
+                        <button class="block" onclick="deleteMessage('${key}')">ลบ</button>
+                        <button class="block" onclick="blockMessage('${key}')">บล็อก</button>
+                      </td>`;
       tbody.appendChild(tr);
     });
   }
 });
 
-window.deleteMessage = function(key){remove(ref(db,'messages/'+key));}
-window.deleteAll = function(){remove(msgRef);}
+window.deleteMessage = function(key){
+  if(confirm("คุณต้องการลบข้อความนี้หรือไม่?")) remove(ref(db,'messages/'+key));
+}
+window.blockMessage = function(key){
+  if(confirm("คุณต้องการบล็อกข้อความนี้หรือไม่?")) remove(ref(db,'messages/'+key));
+}
+window.deleteAll = function(){
+  if(confirm("คุณต้องการล้างข้อความทั้งหมดหรือไม่?")) remove(msgRef);
+}
 </script>
 </body>
 </html>
