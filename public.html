@@ -6,39 +6,35 @@
 <title>กระดานข้อความสาธารณะ</title>
 <style>
 :root{--bg:#0f172a;--card:#111827;--accent:#06b6d4;--muted:#9ca3af}
-html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial;background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white;display:flex;align-items:flex-end;justify-content:center;padding:16px;box-sizing:border-box}
-.app{width:100%;max-width:720px;min-width:280px;background:rgba(255,255,255,0.03);border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(2,6,23,0.6);position:relative;box-sizing:border-box}
-header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial;overflow:hidden}
+body{background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white;display:flex;justify-content:center;align-items:flex-end;padding:0}
+.app{width:90%;max-width:720px;background:rgba(255,255,255,0.03);border-radius:12px;padding:18px;box-shadow:0 8px 30px rgba(2,6,23,0.6);position:relative;box-sizing:border-box}
+header{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 header h1{font-size:18px;margin:0}
 header p{margin:0;color:var(--muted);font-size:13px}
 .composer{display:flex;gap:10px;flex-direction:column}
 .input-row{display:flex;gap:10px}
-input, textarea{flex:1;resize:vertical;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:white;font-size:14px;box-sizing:border-box;min-width:0}
+input, textarea{flex:1;resize:vertical;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:white;font-size:14px}
 input::placeholder, textarea::placeholder{color:var(--muted)}
 button{background:var(--accent);border:0;padding:10px 14px;border-radius:8px;color:#042027;font-weight:600;cursor:pointer}
 button:active{transform:translateY(1px)}
-.feed{position:relative;height:420px;overflow-y:auto;margin-top:12px}
-.message{position:absolute;left:50%;transform:translateX(-50%) translateY(0);min-width:260px;max-width:86%;border-radius:12px;padding:12px 14px;border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(6px);box-shadow:0 8px 20px rgba(2,6,23,0.6);transition:all 0.4s ease;}
+.feed{position:relative;max-height:50vh;overflow-y:auto;margin-top:12px}
+.message{position:relative;min-width:260px;max-width:86%;border-radius:12px;padding:12px 14px;border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(6px);box-shadow:0 8px 20px rgba(2,6,23,0.6);transition:all 0.4s ease;margin-bottom:8px}
 .message .meta{font-size:12px;color:var(--muted);margin-bottom:6px;transition:all 0.4s ease;}
 .message .text{font-size:15px;line-height:1.3;color:#ecfeff;transition:all 0.4s ease;}
 .enter-anim{animation:floatIn 900ms cubic-bezier(.2,.9,.3,1) forwards}
-@keyframes floatIn{0%{opacity:0;transform:translateX(-50%) translateY(30px) scale(0.98)}60%{opacity:1;transform:translateX(-50%) translateY(-14px) scale(1.02)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+@keyframes floatIn{0%{opacity:0;transform:translateY(30px) scale(0.98)}60%{opacity:1;transform:translateY(-14px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
 footer{margin-top:12px;color:var(--muted);font-size:13px}
-@media (max-width:520px){.feed{height:360px}.app{padding:12px}input, textarea{font-size:13px}button{font-size:14px;padding:10px}}
 </style>
 </head>
 <body>
 <div class="app" role="application">
 <header>
-  <div>
-    <h1>กระดานข้อความสาธารณะ</h1>
-    <p>พิมพ์ชื่อและข้อความด้านล่างแล้วกด "ส่ง" — ข้อความจะลอยขึ้นด้านบนแบบเรียลไทม์</p>
-  </div>
+  <h1>กระดานข้อความสาธารณะ</h1>
+  <p>พิมพ์ชื่อและข้อความด้านล่างแล้วกด "ส่ง" — ข้อความจะลอยขึ้นด้านบนแบบเรียลไทม์</p>
 </header>
-
 <div class="feed" id="feed" aria-live="polite"></div>
-
-<div class="composer" style="margin-top:8px">
+<div class="composer">
   <div class="input-row">
     <input id="name" type="text" placeholder="ชื่อของคุณ (ไม่บังคับ)" maxlength="50">
   </div>
@@ -47,13 +43,12 @@ footer{margin-top:12px;color:var(--muted);font-size:13px}
     <button id="send">ส่ง</button>
   </div>
 </div>
-
 <footer>Deploy บน GitHub Pages — ข้อความแชร์แบบสาธารณะจริง</footer>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+import { getDatabase, ref, push, onValue, query, limitToLast, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA5DOlMXP9IedzosXcFls3kvbvdKyQGjGk",
@@ -83,7 +78,6 @@ function renderMessages(messages){
   messages.forEach((m,i)=>{
     const el = document.createElement('div');
     el.className='message enter-anim';
-    el.style.top = (i*72+8)+'px';
     const factor = (max-i)/max;
     const bgAlpha = 0.03 + 0.07*factor;
     const textOpacity = 0.5 + 0.5*factor;
@@ -96,18 +90,22 @@ function renderMessages(messages){
 
 onValue(query(msgRef, limitToLast(20)), snapshot=>{
   const data = snapshot.val();
-  if(data){const msgs = Object.values(data).reverse(); renderMessages(msgs);}
+  if(data){
+    const msgs = Object.values(data).reverse();
+    renderMessages(msgs);
+  }
 });
 
 function sendMessage(){
-  const v = txt.value.trim(); if(!v) return txt.focus();
+  const v = txt.value.trim();
+  if(!v) return txt.focus();
   const n = nameInput.value.trim() || 'Anonymous';
   push(msgRef,{name:n,text:v,t:Date.now()});
   txt.value='';
 }
 
 send.addEventListener('click', sendMessage);
-txt.addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.ctrlKey||e.metaKey)) sendMessage(); });
+txt.addEventListener('keydown', e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))sendMessage();});
 </script>
 </body>
 </html>
