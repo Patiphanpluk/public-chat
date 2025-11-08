@@ -2,206 +2,29 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>กระดานข้อความสาธารณะ + แอดมิน</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>เลือกกระดานข้อความ</title>
 <style>
-:root{--bg:#0f172a;--card:#111827;--accent:#06b6d4;--muted:#9ca3af}
-html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial}
-body{background:linear-gradient(180deg,#071029 0%, #071827 60%);color:white;display:flex;align-items:flex-end;justify-content:center;padding:32px}
-.app{width:100%;max-width:720px;background:rgba(255,255,255,0.03);border-radius:12px;padding:18px;box-shadow:0 8px 30px rgba(2,6,23,0.6);position:relative}
-header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-header h1{font-size:18px;margin:0}
-header p{margin:0;color:var(--muted);font-size:13px}
-.composer{display:flex;gap:10px;flex-direction:column}
-.input-row{display:flex;gap:10px}
-input, textarea{flex:1;resize:vertical;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:white;font-size:14px}
-input::placeholder, textarea::placeholder{color:var(--muted)}
-button{background:var(--accent);border:0;padding:10px 14px;border-radius:8px;color:#042027;font-weight:600;cursor:pointer}
-button:active{transform:translateY(1px)}
-.feed{position:relative;height:420px;overflow:hidden;margin-top:12px}
-.message{position:absolute;left:50%;transform:translateX(-50%) translateY(0);min-width:260px;max-width:86%;border-radius:12px;padding:12px 14px;border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(6px);box-shadow:0 8px 20px rgba(2,6,23,0.6);transition:all 0.4s ease;}
-.message .meta{font-size:12px;color:var(--muted);margin-bottom:6px;transition:all 0.4s ease;}
-.message .text{font-size:15px;line-height:1.3;color:#ecfeff;transition:all 0.4s ease;}
-.enter-anim{animation:floatIn 900ms cubic-bezier(.2,.9,.3,1) forwards}
-@keyframes floatIn{0%{opacity:0;transform:translateX(-50%) translateY(30px) scale(0.98)}60%{opacity:1;transform:translateX(-50%) translateY(-14px) scale(1.02)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
-footer{margin-top:12px;color:var(--muted);font-size:13px}
-.admin-panel{margin-top:12px;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;}
-.admin-panel button{background:#dc2626;color:white}
-.admin-login{margin-top:12px;display:flex;gap:8px;}
-.admin-login input{flex:1}
-.home-buttons{display:flex;gap:12px;justify-content:center;margin-top:40px}
-.home-buttons button{flex:1;max-width:200px;}
+html,body{height:100%;margin:0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;background:#071029;color:white}
+.home-buttons{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.home-buttons button{flex:1;max-width:220px;padding:12px 18px;background:#06b6d4;border:0;border-radius:10px;color:#042027;font-weight:600;cursor:pointer;font-size:16px;}
 </style>
 </head>
 <body>
-<div class="app container">
-
-<!-- หน้าเลือก Public / Admin -->
-<div id="home" class="home-buttons">
+<div class="home-buttons">
   <button id="public-btn">Public Board</button>
   <button id="admin-btn">Admin</button>
 </div>
-
-<!-- หน้า Public -->
-<div id="public-page" style="display:none">
-  <header>
-    <div>
-      <h1>กระดานข้อความสาธารณะ</h1>
-      <p>พิมพ์ชื่อและข้อความด้านล่างแล้วกด "ส่ง" — ข้อความจะลอยขึ้นด้านบนแบบเรียลไทม์</p>
-    </div>
-  </header>
-  <div class="feed" id="feed-public" aria-live="polite"></div>
-  <div class="composer">
-    <div class="input-row">
-      <input id="name-public" type="text" placeholder="ชื่อของคุณ (ไม่บังคับ)" maxlength="50">
-    </div>
-    <div class="input-row">
-      <textarea id="txt-public" placeholder="พิมพ์ข้อความที่นี่..." maxlength="500"></textarea>
-      <button id="send-public">ส่ง</button>
-    </div>
-  </div>
-</div>
-
-<!-- หน้า Admin -->
-<div id="admin-page" style="display:none">
-  <header>
-    <div>
-      <h1>Admin Panel</h1>
-      <p>ต้องใส่รหัสผ่านเพื่อเข้าถึง feed และจัดการข้อความ</p>
-    </div>
-  </header>
-  <div class="admin-login">
-    <input type="password" id="admin-pass" placeholder="รหัสผ่านแอดมิน">
-    <button id="login-admin">เข้าสู่ระบบ</button>
-  </div>
-  <div class="admin-panel" id="admin-panel" style="display:none">
-    <div class="feed" id="feed-admin" aria-live="polite"></div>
-    <div class="composer">
-      <div class="input-row">
-        <input id="name-admin" type="text" placeholder="ชื่อของคุณ (ไม่บังคับ)" maxlength="50">
-      </div>
-      <div class="input-row">
-        <textarea id="txt-admin" placeholder="พิมพ์ข้อความที่นี่..." maxlength="500"></textarea>
-        <button id="send-admin">ส่ง</button>
-      </div>
-    </div>
-    <button id="clear-all">ล้างข้อมูลทั้งหมด</button>
-  </div>
-</div>
-
-<footer>Deploy บน GitHub Pages — แชร์ลิงก์ Public ได้</footer>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, query, limitToLast, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyA5DOlMXP9IedzosXcFls3kvbvdKyQGjGk",
-  authDomain: "project-901413547666359240.firebaseapp.com",
-  databaseURL: "https://project-901413547666359240-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  projectId: "project-901413547666359240",
-  storageBucket: "project-901413547666359240.firebasestorage.app",
-  messagingSenderId: "321646066089",
-  appId: "1:321646066089:web:9f565ce9ca38d5516c6cb8",
-  measurementId: "G-8SQYEJ2MHD"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const msgRef = ref(db, "messages");
-
-const home = document.getElementById('home');
+<script>
 const publicBtn = document.getElementById('public-btn');
 const adminBtn = document.getElementById('admin-btn');
 
-const publicPage = document.getElementById('public-page');
-const adminPage = document.getElementById('admin-page');
-
-const feedPublic = document.getElementById('feed-public');
-const txtPublic = document.getElementById('txt-public');
-const namePublic = document.getElementById('name-public');
-const sendPublic = document.getElementById('send-public');
-
-const feedAdmin = document.getElementById('feed-admin');
-const txtAdmin = document.getElementById('txt-admin');
-const nameAdmin = document.getElementById('name-admin');
-const sendAdmin = document.getElementById('send-admin');
-const adminPass = document.getElementById('admin-pass');
-const loginAdmin = document.getElementById('login-admin');
-const adminPanel = document.getElementById('admin-panel');
-const clearAllBtn = document.getElementById('clear-all');
-
-const ADMIN_PASSWORD = "admin123";
-
-function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-
-function renderMessages(messages, feed){
-  feed.innerHTML='';
-  const max = messages.length;
-  messages.forEach((m,i)=>{
-    const el = document.createElement('div');
-    el.className='message enter-anim';
-    el.style.top = (i*72+8)+'px';
-    const factor = (max-i)/max;
-    const bgAlpha = 0.03 + 0.07*factor;
-    const textOpacity = 0.5 + 0.5*factor;
-    el.style.background=`rgba(255,255,255,${bgAlpha})`;
-    el.innerHTML = `<div class="meta" style="opacity:${textOpacity}">${escapeHtml(m.name||'Anonymous')} • ${new Date(m.t).toLocaleString()}</div>
-                    <div class="text" style="opacity:${textOpacity}">${escapeHtml(m.text)}</div>`;
-    feed.appendChild(el);
-  });
-}
-
-// โหลดเรียลไทม์
-function setupFeed(feed){
-  onValue(query(msgRef, limitToLast(20)), snapshot=>{
-    const data = snapshot.val();
-    if(data){
-      const msgs = Object.values(data).reverse();
-      renderMessages(msgs, feed);
-    }
-  });
-}
-
-setupFeed(feedPublic);
-setupFeed(feedAdmin);
-
-function sendMessage(txtEl, nameEl){
-  const v = txtEl.value.trim();
-  if(!v) return txtEl.focus();
-  const n = nameEl.value.trim() || 'Anonymous';
-  push(msgRef,{name:n,text:v,t:Date.now()});
-  txtEl.value='';
-}
-
-// ปุ่มส่ง
-sendPublic.addEventListener('click', ()=>sendMessage(txtPublic,namePublic));
-sendAdmin.addEventListener('click', ()=>sendMessage(txtAdmin,nameAdmin));
-
-// หน้าเลือก
 publicBtn.addEventListener('click', ()=>{
-  home.style.display='none';
-  publicPage.style.display='block';
+  window.open('public.html','_blank');
 });
+
 adminBtn.addEventListener('click', ()=>{
-  home.style.display='none';
-  adminPage.style.display='block';
-});
-
-// ล็อกอินแอดมิน
-loginAdmin.addEventListener('click', ()=>{
-  if(adminPass.value===ADMIN_PASSWORD){
-    adminPanel.style.display='block';
-    loginAdmin.style.display='none';
-    adminPass.style.display='none';
-  } else alert('รหัสผ่านไม่ถูกต้อง');
-});
-
-// ล้างข้อมูล
-clearAllBtn.addEventListener('click', ()=>{
-  if(confirm('คุณแน่ใจหรือไม่ที่จะล้างข้อมูลทั้งหมด?')){
-    remove(msgRef);
-  }
+  window.location.href='admin.html';
 });
 </script>
 </body>
