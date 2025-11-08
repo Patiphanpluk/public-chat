@@ -9,9 +9,9 @@
 html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system,"Segoe UI",Roboto,Noto Sans,Helvetica,Arial;overflow:hidden}
 body{background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white;display:flex;justify-content:center;padding:0}
 .app{width:90%;max-width:720px;background:rgba(255,255,255,0.03);border-radius:12px;padding:18px;box-shadow:0 8px 30px rgba(2,6,23,0.6);position:relative;box-sizing:border-box;display:flex;flex-direction:column;height:100vh}
-header{position:sticky;top:0;display:flex;flex-direction:column;gap:6px;margin-bottom:12px;background:rgba(0,0,0,0.3);backdrop-filter:blur(6px);padding:8px 0;z-index:10}
+header{position:sticky;top:0;display:flex;flex-direction:column;gap:6px;margin-bottom:12px;z-index:10}
 header h1{font-size:18px;margin:0}
-header p{margin:0;color:var(--muted);font-size:13px}
+header p{margin:0;color:var(--muted);font-size:13}
 .composer{display:flex;gap:10px;flex-direction:column;margin-top:auto}
 .input-row{display:flex;gap:10px}
 input, textarea{flex:1;resize:vertical;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:white;font-size:14px}
@@ -72,7 +72,6 @@ const send = document.getElementById('send');
 
 function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
-// render messages แบบ float + fade ล่าสุด
 function renderMessages(messages){
   feed.innerHTML='';
   const max = messages.length;
@@ -84,13 +83,11 @@ function renderMessages(messages){
     const textOpacity = 0.5 + 0.5*factor;
     el.style.background=`rgba(255,255,255,${bgAlpha})`;
     el.innerHTML = `<div class="meta" style="opacity:${textOpacity}">${escapeHtml(m.name||'Anonymous')} • ${new Date(m.t).toLocaleString()}</div>
-                    <div class="text" style="opacity:${textOpacity}">${escapeHtml(m.text)}</div>
-                    <button style="float:right;margin-top:4px;background:#ef4444;color:white;border:none;padding:2px 6px;border-radius:4px;cursor:pointer" onclick="blockMessage('${m.key}')">บล็อก</button>`;
+                    <div class="text" style="opacity:${textOpacity}">${escapeHtml(m.text)}</div>`;
     feed.appendChild(el);
   });
 }
 
-// โหลดข้อความเรียลไทม์
 onValue(query(msgRef, limitToLast(50)), snapshot=>{
   const data = snapshot.val();
   if(data){
@@ -109,11 +106,6 @@ function sendMessage(){
 
 send.addEventListener('click', sendMessage);
 txt.addEventListener('keydown', e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))sendMessage();});
-
-// ลบข้อความ / บล็อก
-window.blockMessage = function(key){
-  if(confirm("คุณต้องการบล็อกข้อความนี้หรือไม่?")) remove(ref(db,'messages/'+key));
-};
 </script>
 </body>
 </html>
