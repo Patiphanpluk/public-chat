@@ -1,35 +1,59 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Public Board</title>
+<title>กระดานข้อความสาธารณะ</title>
 <style>
 :root{--bg:#0f172a;--card:#111827;--accent:#06b6d4;--muted:#9ca3af}
-html,body{height:100%;margin:0;font-family:Inter,sans-serif;background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white;display:flex;align-items:center;justify-content:center;padding:0}
-.app{width:100%;max-width:720px;padding:24px;position:relative;display:flex;flex-direction:column}
+html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial; background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white;display:flex;align-items:flex-end;justify-content:center;padding:32px}
+.app{width:100%;max-width:720px;background:rgba(255,255,255,0.03);border-radius:12px;padding:18px;box-shadow:0 8px 30px rgba(2,6,23,0.6);position:relative}
+header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+header h1{font-size:18px;margin:0}
+header p{margin:0;color:var(--muted);font-size:13px}
+.composer{display:flex;gap:10px;flex-direction:column}
+.input-row{display:flex;gap:10px}
+input, textarea{flex:1;resize:vertical;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:white;font-size:14px}
+input::placeholder, textarea::placeholder{color:var(--muted)}
+button{background:var(--accent);border:0;padding:10px 14px;border-radius:8px;color:#042027;font-weight:600;cursor:pointer}
+button:active{transform:translateY(1px)}
 .feed{position:relative;height:420px;overflow:hidden;margin-top:12px}
 .message{position:absolute;left:50%;transform:translateX(-50%) translateY(0);min-width:260px;max-width:86%;border-radius:12px;padding:12px 14px;border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(6px);box-shadow:0 8px 20px rgba(2,6,23,0.6);transition:all 0.4s ease;}
 .message .meta{font-size:12px;color:var(--muted);margin-bottom:6px;transition:all 0.4s ease;}
 .message .text{font-size:15px;line-height:1.3;color:#ecfeff;transition:all 0.4s ease;}
 .enter-anim{animation:floatIn 900ms cubic-bezier(.2,.9,.3,1) forwards}
 @keyframes floatIn{0%{opacity:0;transform:translateX(-50%) translateY(30px) scale(0.98)}60%{opacity:1;transform:translateX(-50%) translateY(-14px) scale(1.02)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
-input,textarea{flex:1;resize:vertical;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:white;font-size:14px;margin:4px 0;}
-button.send-btn{background:var(--accent);border:0;padding:10px 14px;border-radius:8px;color:#042027;font-weight:600;cursor:pointer;margin:4px 0;}
+footer{margin-top:12px;color:var(--muted);font-size:13px}
+@media (max-width:520px){.feed{height:360px}.app{padding:14px}}
 </style>
 </head>
 <body>
-<div class="app">
-  <h2>Public Board</h2>
-  <div class="feed" id="feed"></div>
-  <input id="name" type="text" placeholder="ชื่อ (ไม่บังคับ)">
-  <textarea id="txt" placeholder="พิมพ์ข้อความ..."></textarea>
-  <button id="send" class="send-btn">ส่ง</button>
+<div class="app" role="application">
+<header>
+  <div>
+    <h1>กระดานข้อความสาธารณะ</h1>
+    <p>พิมพ์ชื่อและข้อความด้านล่างแล้วกด "ส่ง" — ข้อความจะลอยขึ้นด้านบนแบบเรียลไทม์</p>
+  </div>
+</header>
+
+<div class="feed" id="feed" aria-live="polite"></div>
+
+<div class="composer" style="margin-top:8px">
+  <div class="input-row">
+    <input id="name" type="text" placeholder="ชื่อของคุณ (ไม่บังคับ)" maxlength="50">
+  </div>
+  <div class="input-row">
+    <textarea id="txt" placeholder="พิมพ์ข้อความที่นี่..." maxlength="500"></textarea>
+    <button id="send">ส่ง</button>
+  </div>
+</div>
+
+<footer>Deploy บน GitHub Pages — ข้อความแชร์แบบสาธารณะจริง</footer>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+import { getDatabase, ref, push, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA5DOlMXP9IedzosXcFls3kvbvdKyQGjGk",
@@ -44,49 +68,51 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const msgRef = ref(db,"messages");
-const blockRef = ref(db,"blocked");
+const msgRef = ref(db, "messages");
 
 const feed = document.getElementById('feed');
 const txt = document.getElementById('txt');
 const nameInput = document.getElementById('name');
-
-let blockedUsers = [];
+const send = document.getElementById('send');
 
 function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
-onValue(blockRef,snap=>{
-  const data = snap.val();
-  blockedUsers = data ? Object.values(data) : [];
-});
-
-onValue(msgRef, snapshot=>{
-  const data = snapshot.val();
-  let messages = data ? Object.keys(data).map(k=>({key:k,...data[k]})).sort((a,b)=>b.t-a.t) : [];
-  messages = messages.filter(m=>!blockedUsers.includes(m.name));
+function renderMessages(messages){
   feed.innerHTML='';
   const max = messages.length;
   messages.forEach((m,i)=>{
-    const el=document.createElement('div');
+    const el = document.createElement('div');
     el.className='message enter-anim';
-    el.style.top=(i*72+8)+'px';
-    const factor=(max-i)/max;
-    const bgAlpha=0.03+0.07*factor;
-    const textOpacity=0.5+0.5*factor;
+    el.style.top = (i*72+8)+'px';
+    const factor = (max-i)/max;
+    const bgAlpha = 0.03 + 0.07*factor;
+    const textOpacity = 0.5 + 0.5*factor;
     el.style.background=`rgba(255,255,255,${bgAlpha})`;
-    el.innerHTML=`<div class="meta" style="opacity:${textOpacity}">${escapeHtml(m.name||'Anonymous')} • ${new Date(m.t).toLocaleString()}</div>
-                  <div class="text" style="opacity:${textOpacity}">${escapeHtml(m.text)}</div>`;
+    el.innerHTML = `<div class="meta" style="opacity:${textOpacity}">${escapeHtml(m.name||'Anonymous')} • ${new Date(m.t).toLocaleString()}</div>
+                    <div class="text" style="opacity:${textOpacity}">${escapeHtml(m.text)}</div>`;
     feed.appendChild(el);
   });
+}
+
+onValue(query(msgRef, limitToLast(20)), snapshot=>{
+  const data = snapshot.val();
+  if(data){
+    const msgs = Object.values(data).reverse();
+    renderMessages(msgs);
+  }
 });
 
-document.getElementById('send').addEventListener('click', ()=>{
+function sendMessage(){
   const v = txt.value.trim();
   if(!v) return txt.focus();
-  const n = nameInput.value.trim()||'Anonymous';
-  if(blockedUsers.includes(n)){ alert("ผู้ใช้ถูกบล็อกไม่สามารถโพสต์ได้"); return; }
-  push(msgRef,{name:n,text:v,t:Date.now(),device:navigator.userAgent});
+  const n = nameInput.value.trim() || 'Anonymous';
+  push(msgRef,{name:n,text:v,t:Date.now()});
   txt.value='';
+}
+
+send.addEventListener('click', sendMessage);
+txt.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)) sendMessage();
 });
 </script>
 </body>
