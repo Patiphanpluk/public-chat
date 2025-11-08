@@ -5,52 +5,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Admin Panel</title>
 <style>
-:root{--bg:#0f172a;--card:#111827;--accent:#06b6d4;--muted:#9ca3af;--danger:#ef4444}
-html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial; background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white;display:flex;align-items:flex-end;justify-content:center;padding:32px}
-.app{width:100%;max-width:720px;background:rgba(255,255,255,0.03);border-radius:12px;padding:18px;box-shadow:0 8px 30px rgba(2,6,23,0.6);position:relative;display:flex;flex-direction:column}
-header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-header h1{font-size:18px;margin:0}
-header p{margin:0;color:var(--muted);font-size:13px}
-.composer{display:flex;gap:10px;flex-direction:column}
-.input-row{display:flex;gap:10px}
-input, textarea{flex:1;resize:vertical;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:white;font-size:14px}
-input::placeholder, textarea::placeholder{color:var(--muted)}
-button{background:var(--accent);border:0;padding:10px 14px;border-radius:8px;color:#042027;font-weight:600;cursor:pointer}
-button.del-btn, button.block-btn, button.clear-btn{background:var(--danger);}
-button:active{transform:translateY(1px);}
-.feed{position:relative;height:300px;overflow:hidden;margin-top:12px}
-.message{position:absolute;left:50%;transform:translateX(-50%) translateY(0);min-width:260px;max-width:86%;border-radius:12px;padding:12px 14px;border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(6px);box-shadow:0 8px 20px rgba(2,6,23,0.6);transition:all 0.4s ease;}
-.message .meta{font-size:12px;color:var(--muted);margin-bottom:6px;transition:all 0.4s ease;}
-.message .text{font-size:15px;line-height:1.3;color:#ecfeff;transition:all 0.4s ease;}
-.enter-anim{animation:floatIn 900ms cubic-bezier(.2,.9,.3,1) forwards}
-table{width:100%;border-collapse:collapse;margin-top:12px;color:white;font-size:14px;}
-table th, table td{border:1px solid rgba(255,255,255,0.1);padding:6px;text-align:center;}
-@keyframes floatIn{0%{opacity:0;transform:translateX(-50%) translateY(30px) scale(0.98)}60%{opacity:1;transform:translateX(-50%) translateY(-14px) scale(1.02)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial;background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white;display:flex;justify-content:center;align-items:flex-start;padding:16px;box-sizing:border-box}
+.app{width:100%;max-width:900px;min-width:320px;background:rgba(255,255,255,0.03);border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(2,6,23,0.6);position:relative;box-sizing:border-box}
+h1{margin:0 0 10px 0;font-size:20px}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{border:1px solid rgba(255,255,255,0.2);padding:8px;text-align:left;font-size:14px}
+th{background:rgba(255,255,255,0.05)}
+button{padding:6px 10px;font-size:13px;border:none;border-radius:6px;margin:2px;cursor:pointer;transition:0.2s}
+.block-btn{background:#f59e0b;color:#042027}
+.delete-btn{background:#ef4444;color:#fff}
+.clear-btn{background:#dc2626;color:#fff;margin-top:10px;padding:10px 16px;font-weight:600}
 </style>
 </head>
 <body>
 <div class="app">
-<header>
-  <h1>Admin Panel</h1>
-  <p>จัดการข้อความแบบเรียลไทม์</p>
-</header>
-
-<div class="feed" id="feed-admin"></div>
-<table>
-<thead><tr><th>เวลา</th><th>ชื่อ</th><th>ข้อความ</th><th>Device</th><th>Action</th></tr></thead>
-<tbody id="admin-table"></tbody>
+<h1>Admin Panel — ข้อความทั้งหมด</h1>
+<table id="msgTable">
+<thead><tr><th>ชื่อ</th><th>ข้อความ</th><th>เวลา</th><th>Device</th><th>Action</th></tr></thead>
+<tbody></tbody>
 </table>
-
-<div class="composer">
-  <div class="input-row">
-    <input id="name-admin" type="text" placeholder="ชื่อ (ไม่บังคับ)">
-  </div>
-  <div class="input-row">
-    <textarea id="txt-admin" placeholder="พิมพ์ข้อความ..."></textarea>
-    <button id="send-admin">ส่ง</button>
-  </div>
-</div>
-<button id="clear-all" class="clear-btn">ล้างข้อมูลทั้งหมด</button>
+<button class="clear-btn" id="clearAll">ล้างทั้งหมด</button>
 </div>
 
 <script type="module">
@@ -71,77 +45,31 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const msgRef = ref(db, "messages");
-const blockRef = ref(db,"blocked");
 
-const feedAdmin = document.getElementById('feed-admin');
-const adminTable = document.getElementById('admin-table');
-const sendAdmin = document.getElementById('send-admin');
-const txtAdmin = document.getElementById('txt-admin');
-const nameAdmin = document.getElementById('name-admin');
-const clearAll = document.getElementById('clear-all');
+const tableBody = document.querySelector('#msgTable tbody');
+const clearAll = document.getElementById('clearAll');
 
-let blockedUsers = [];
-
-function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-
-onValue(blockRef, snap=>{blockedUsers = snap.val()? Object.values(snap.val()) : [];});
-
-onValue(msgRef, snap=>{
-  const data = snap.val();
-  let messages = data? Object.keys(data).map(k=>({key:k,...data[k]})).sort((a,b)=>b.t-a.t):[];
-  messages = messages.filter(m=>!blockedUsers.includes(m.name));
-  
-  // feed preview
-  feedAdmin.innerHTML='';
-  const max = messages.length;
-  messages.forEach((m,i)=>{
-    const el = document.createElement('div');
-    el.className='message enter-anim';
-    el.style.top=(i*72+8)+'px';
-    const factor = (max-i)/max;
-    const bgAlpha = 0.03 + 0.07*factor;
-    const textOpacity = 0.5 + 0.5*factor;
-    el.style.background=`rgba(255,255,255,${bgAlpha})`;
-    el.innerHTML=`<div class="meta" style="opacity:${textOpacity}">${escapeHtml(m.name||'Anonymous')} • ${new Date(m.t).toLocaleString()}</div>
-                  <div class="text" style="opacity:${textOpacity}">${escapeHtml(m.text)}</div>`;
-    feedAdmin.appendChild(el);
-  });
-
-  // table
-  adminTable.innerHTML='';
-  messages.forEach(m=>{
+function renderTable(data){
+  tableBody.innerHTML='';
+  for(const key in data){
+    const m = data[key];
     const tr = document.createElement('tr');
-    tr.innerHTML=`<td>${new Date(m.t).toLocaleString()}</td>
-                  <td>${escapeHtml(m.name)}</td>
-                  <td>${escapeHtml(m.text)}</td>
-                  <td>${escapeHtml(m.device||'')}</td>
+    tr.innerHTML=`<td>${m.name||'Anonymous'}</td>
+                  <td>${m.text}</td>
+                  <td>${new Date(m.t).toLocaleString()}</td>
+                  <td>${m.device||''}</td>
                   <td>
-                    <button class="del-btn" data-key="${m.key}">ลบ</button>
-                    <button class="block-btn" data-name="${escapeHtml(m.name)}">บล็อก</button>
+                    <button class="delete-btn">ลบ</button>
+                    <button class="block-btn">บล็อก</button>
                   </td>`;
-    adminTable.appendChild(tr);
-  });
+    tableBody.appendChild(tr);
 
-  adminTable.querySelectorAll('.del-btn').forEach(btn=>{
-    btn.addEventListener('click', e=>{
-      remove(ref(db,'messages/'+e.target.dataset.key));
-    });
-  });
-  adminTable.querySelectorAll('.block-btn').forEach(btn=>{
-    btn.addEventListener('click', e=>{
-      push(blockRef,e.target.dataset.name);
-      alert(e.target.dataset.name+' ถูกบล็อกเรียบร้อย');
-    });
-  });
-});
+    tr.querySelector('.delete-btn').addEventListener('click', ()=>{ remove(ref(db,"messages/"+key)); });
+    tr.querySelector('.block-btn').addEventListener('click', ()=>{ alert('บล็อกชื่อ: '+(m.name||'Anonymous')); });
+  }
+}
 
-sendAdmin.addEventListener('click', ()=>{
-  const v = txtAdmin.value.trim();
-  if(!v) return txtAdmin.focus();
-  const n = nameAdmin.value.trim() || 'Admin';
-  push(msgRef,{name:n,text:v,t:Date.now(),device:navigator.userAgent});
-  txtAdmin.value='';
-});
+onValue(msgRef, snapshot=>{ const data = snapshot.val(); if(data) renderTable(data); else tableBody.innerHTML=''; });
 
 clearAll.addEventListener('click', ()=>{ if(confirm('ลบข้อความทั้งหมด?')) remove(msgRef); });
 </script>
