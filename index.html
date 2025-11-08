@@ -1,184 +1,23 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Admin Panel</title>
+<title>เลือกกระดานข้อความ</title>
 <style>
-:root{--bg:#0f172a;--card:#111827;--accent:#06b6d4;--muted:#9ca3af;--danger:#ef4444}
-html,body{height:100%;margin:0;font-family:Inter,sans-serif;background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white;display:flex;align-items:center;justify-content:center;padding:0}
-.app{width:100%;max-width:720px;padding:24px;position:relative;display:flex;flex-direction:column}
-.feed{position:relative;height:420px;overflow:hidden;margin-top:12px}
-.message{position:absolute;left:50%;transform:translateX(-50%) translateY(0);min-width:260px;max-width:86%;border-radius:12px;padding:12px 14px;border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(6px);box-shadow:0 8px 20px rgba(2,6,23,0.6);transition:all 0.4s ease;}
-.message .meta{font-size:12px;color:var(--muted);margin-bottom:6px;transition:all 0.4s ease;}
-.message .text{font-size:15px;line-height:1.3;color:#ecfeff;transition:all 0.4s ease;}
-.enter-anim{animation:floatIn 900ms cubic-bezier(.2,.9,.3,1) forwards}
-@keyframes floatIn{0%{opacity:0;transform:translateX(-50%) translateY(30px) scale(0.98)}60%{opacity:1;transform:translateX(-50%) translateY(-14px) scale(1.02)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
-input,textarea{flex:1;resize:vertical;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:white;font-size:14px;margin:4px 0;}
-button.send-btn{background:var(--danger);border:0;padding:10px 14px;border-radius:8px;color:white;font-weight:600;cursor:pointer;margin:4px 0;}
-table{width:100%;border-collapse:collapse;margin-top:12px;color:white;font-size:14px;}
-table th, table td{border:1px solid rgba(255,255,255,0.1);padding:6px;}
-button.del-btn, button.block-btn{background:var(--danger);color:white;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;margin:0 2px;}
-button.clear-btn{background:var(--danger);color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;margin-bottom:6px;}
+:root{--bg:#0f172a;--card:#111827;--accent:#06b6d4;--danger:#ef4444}
+html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial; background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white;display:flex;align-items:center;justify-content:center}
+.container{display:flex;flex-direction:column;align-items:center;gap:20px;}
+button{padding:14px 20px;border-radius:10px;border:none;font-size:16px;font-weight:600;color:#042027;background:var(--accent);cursor:pointer;transition:all 0.2s ease;}
+button:active{transform:translateY(2px);}
+h1{margin-bottom:20px;font-size:22px;}
 </style>
 </head>
 <body>
-<div class="app">
-<h2>Admin Panel</h2>
-<div id="login-area">
-  <input type="password" id="admin-pass" placeholder="รหัสผ่านแอดมิน">
-  <button id="login-btn" class="send-btn">เข้าสู่ระบบ</button>
+<div class="container">
+  <h1>เลือกกระดานข้อความ</h1>
+  <button onclick="window.open('public.html','_blank')">Public Board</button>
+  <button onclick="window.location.href='admin.html'">Admin Panel</button>
 </div>
-
-<div id="admin-panel" style="display:none;">
-  <button id="clear-all" class="clear-btn">ล้างข้อมูลทั้งหมด</button>
-
-  <h3>Feed Preview</h3>
-  <div class="feed" id="feed-admin"></div>
-
-  <h3>ข้อมูลทั้งหมด</h3>
-  <table>
-    <thead>
-      <tr><th>เวลา</th><th>ชื่อ</th><th>ข้อความ</th><th>Device</th><th>Action</th></tr>
-    </thead>
-    <tbody id="admin-table"></tbody>
-  </table>
-
-  <h3>โพสต์ข้อความ</h3>
-  <input id="name-admin" type="text" placeholder="ชื่อ (ไม่บังคับ)">
-  <textarea id="txt-admin" placeholder="พิมพ์ข้อความ..."></textarea>
-  <button id="send-admin" class="send-btn">ส่ง</button>
-</div>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyA5DOlMXP9IedzosXcFls3kvbvdKyQGjGk",
-  authDomain: "project-901413547666359240.firebaseapp.com",
-  databaseURL: "https://project-901413547666359240-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  projectId: "project-901413547666359240",
-  storageBucket: "project-901413547666359240.firebasestorage.app",
-  messagingSenderId: "321646066089",
-  appId: "1:321646066089:web:9f565ce9ca38d5516c6cb8",
-  measurementId: "G-8SQYEJ2MHD"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const msgRef = ref(db,"messages");
-const blockRef = ref(db,"blocked");
-
-const feedAdmin = document.getElementById('feed-admin');
-const txtAdmin = document.getElementById('txt-admin');
-const nameAdmin = document.getElementById('name-admin');
-const adminPass = document.getElementById('admin-pass');
-const loginBtn = document.getElementById('login-btn');
-const loginArea = document.getElementById('login-area');
-const adminPanel = document.getElementById('admin-panel');
-const adminTable = document.getElementById('admin-table');
-const sendAdmin = document.getElementById('send-admin');
-const clearAll = document.getElementById('clear-all');
-
-const ADMIN_PASSWORD = "admin123";
-let blockedUsers = [];
-
-function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-
-function renderMessages(messages, feed){
-  feed.innerHTML='';
-  const max = messages.length;
-  messages.forEach((m,i)=>{
-    const el=document.createElement('div');
-    el.className='message enter-anim';
-    el.style.top=(i*72+8)+'px';
-    const factor=(max-i)/max;
-    const bgAlpha=0.03+0.07*factor;
-    const textOpacity=0.5+0.5*factor;
-    el.style.background=`rgba(255,255,255,${bgAlpha})`;
-    el.innerHTML=`<div class="meta" style="opacity:${textOpacity}">${escapeHtml(m.name||'Anonymous')} • ${new Date(m.t).toLocaleString()}</div>
-                  <div class="text" style="opacity:${textOpacity}">${escapeHtml(m.text)}</div>`;
-    feed.appendChild(el);
-  });
-}
-
-function renderTable(messages){
-  adminTable.innerHTML='';
-  messages.forEach(m=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML=`<td>${new Date(m.t).toLocaleString()}</td>
-                  <td>${escapeHtml(m.name)}</td>
-                  <td>${escapeHtml(m.text)}</td>
-                  <td>${escapeHtml(m.device)}</td>
-                  <td>
-                    <button class="del-btn" data-key="${m.key}">ลบ</button>
-                    <button class="block-btn" data-name="${escapeHtml(m.name)}">บล็อก</button>
-                  </td>`;
-    adminTable.appendChild(tr);
-  });
-  // ลบ
-  adminTable.querySelectorAll('.del-btn').forEach(btn=>{
-    btn.addEventListener('click',e=>{
-      const key = e.target.dataset.key;
-      remove(ref(db,'messages/'+key));
-    });
-  });
-  // บล็อก
-  adminTable.querySelectorAll('.block-btn').forEach(btn=>{
-    btn.addEventListener('click',e=>{
-      const name = e.target.dataset.name;
-      push(blockRef,name);
-      alert(name+' ถูกบล็อกเรียบร้อย');
-    });
-  });
-}
-
-// โหลดรายชื่อบล็อก
-onValue(blockRef, snapshot=>{
-  const data = snapshot.val();
-  blockedUsers = data ? Object.values(data) : [];
-});
-
-onValue(msgRef, snapshot=>{
-  const data = snapshot.val();
-  let messages = data ? Object.keys(data).map(k=>({key:k,...data[k]})).sort((a,b)=>b.t-a.t) : [];
-  // filter blocked
-  messages = messages.filter(m=>!blockedUsers.includes(m.name));
-  renderMessages(messages, feedAdmin);
-  renderTable(messages);
-});
-
-// ส่งข้อความ
-sendAdmin.addEventListener('click', ()=>{
-  const v = txtAdmin.value.trim();
-  if(!v) return txtAdmin.focus();
-  const n = nameAdmin.value.trim()||'Anonymous';
-  if(blockedUsers.includes(n)){
-    alert("ผู้ใช้ถูกบล็อกไม่สามารถโพสต์ได้");
-    return;
-  }
-  push(msgRef,{name:n,text:v,t:Date.now(),device:navigator.userAgent});
-  txtAdmin.value='';
-});
-
-// ล้างทั้งหมด
-clearAll.addEventListener('click', ()=>{
-  if(confirm("ต้องการลบข้อความทั้งหมดจริงหรือไม่?")){
-    remove(msgRef);
-  }
-});
-
-// ล็อกอิน
-loginBtn.addEventListener('click', ()=>{
-  if(adminPass.value === ADMIN_PASSWORD){
-    loginArea.style.display='none';
-    adminPanel.style.display='block';
-  } else {
-    alert('รหัสผ่านไม่ถูกต้อง');
-  }
-});
-</script>
 </body>
 </html>
