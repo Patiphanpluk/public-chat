@@ -3,33 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Admin Panel</title>
+<title>แอดมินกระดานข้อความ</title>
 <style>
-html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial;background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white;display:flex;justify-content:center;align-items:flex-start;padding:16px;box-sizing:border-box}
-.app{width:100%;max-width:900px;min-width:320px;background:rgba(255,255,255,0.03);border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(2,6,23,0.6);position:relative;box-sizing:border-box}
-h1{margin:0 0 10px 0;font-size:20px}
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th,td{border:1px solid rgba(255,255,255,0.2);padding:8px;text-align:left;font-size:14px}
+body{margin:0;padding:0;font-family:Inter, system-ui, -apple-system,"Segoe UI",Roboto,Noto Sans,Helvetica,Arial;background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white}
+.app{width:90%;max-width:900px;margin:20px auto;padding:16px;background:rgba(255,255,255,0.03);border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+h1{margin:0 0 12px;font-size:20px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid rgba(255,255,255,0.2);padding:6px 8px;text-align:left;font-size:13px;color:white}
 th{background:rgba(255,255,255,0.05)}
-button{padding:6px 10px;font-size:13px;border:none;border-radius:6px;margin:2px;cursor:pointer;transition:0.2s}
-.block-btn{background:#f59e0b;color:#042027}
-.delete-btn{background:#ef4444;color:#fff}
-.clear-btn{background:#dc2626;color:#fff;margin-top:10px;padding:10px 16px;font-weight:600}
+button{padding:6px 10px;border:none;border-radius:6px;cursor:pointer;font-weight:600}
+.block{background:#ef4444;color:white;margin-right:4px;}
+.deleteAll{background:#ef4444;color:white;margin-top:12px;}
 </style>
 </head>
 <body>
 <div class="app">
-<h1>Admin Panel — ข้อความทั้งหมด</h1>
-<table id="msgTable">
-<thead><tr><th>ชื่อ</th><th>ข้อความ</th><th>เวลา</th><th>Device</th><th>Action</th></tr></thead>
-<tbody></tbody>
+<h1>Admin Dashboard</h1>
+<table>
+<thead><tr><th>เวลา</th><th>ชื่อ</th><th>ข้อความ</th><th>Action</th></tr></thead>
+<tbody id="tbody"></tbody>
 </table>
-<button class="clear-btn" id="clearAll">ล้างทั้งหมด</button>
+<button class="deleteAll" onclick="deleteAll()">ล้างทั้งหมด</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA5DOlMXP9IedzosXcFls3kvbvdKyQGjGk",
@@ -44,34 +43,26 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const msgRef = ref(db, "messages");
+const msgRef = ref(db,"messages");
+const tbody = document.getElementById('tbody');
 
-const tableBody = document.querySelector('#msgTable tbody');
-const clearAll = document.getElementById('clearAll');
-
-function renderTable(data){
-  tableBody.innerHTML='';
-  for(const key in data){
-    const m = data[key];
-    const tr = document.createElement('tr');
-    tr.innerHTML=`<td>${m.name||'Anonymous'}</td>
-                  <td>${m.text}</td>
-                  <td>${new Date(m.t).toLocaleString()}</td>
-                  <td>${m.device||''}</td>
-                  <td>
-                    <button class="delete-btn">ลบ</button>
-                    <button class="block-btn">บล็อก</button>
-                  </td>`;
-    tableBody.appendChild(tr);
-
-    tr.querySelector('.delete-btn').addEventListener('click', ()=>{ remove(ref(db,"messages/"+key)); });
-    tr.querySelector('.block-btn').addEventListener('click', ()=>{ alert('บล็อกชื่อ: '+(m.name||'Anonymous')); });
+onValue(msgRef,snapshot=>{
+  const data = snapshot.val();
+  tbody.innerHTML='';
+  if(data){
+    Object.entries(data).sort((a,b)=>b[1].t - a[1].t).forEach(([key,val])=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${new Date(val.t).toLocaleString()}</td>
+                      <td>${val.name||'Anonymous'}</td>
+                      <td>${val.text}</td>
+                      <td><button class="block" onclick="deleteMessage('${key}')">ลบ</button></td>`;
+      tbody.appendChild(tr);
+    });
   }
-}
+});
 
-onValue(msgRef, snapshot=>{ const data = snapshot.val(); if(data) renderTable(data); else tableBody.innerHTML=''; });
-
-clearAll.addEventListener('click', ()=>{ if(confirm('ลบข้อความทั้งหมด?')) remove(msgRef); });
+window.deleteMessage = function(key){remove(ref(db,'messages/'+key));}
+window.deleteAll = function(){remove(msgRef);}
 </script>
 </body>
 </html>
