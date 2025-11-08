@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Public Board</title>
+<style>
+:root{--bg:#0f172a;--card:#111827;--accent:#06b6d4;--muted:#9ca3af}
+html,body{height:100%;margin:0;font-family:Inter,sans-serif;background:linear-gradient(180deg,#071029 0%,#071827 60%);color:white;display:flex;align-items:center;justify-content:center;padding:0}
+.app{width:100%;max-width:720px;padding:24px;position:relative;display:flex;flex-direction:column}
+.feed{position:relative;height:420px;overflow:hidden;margin-top:12px}
+.message{position:absolute;left:50%;transform:translateX(-50%) translateY(0);min-width:260px;max-width:86%;border-radius:12px;padding:12px 14px;border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(6px);box-shadow:0 8px 20px rgba(2,6,23,0.6);transition:all 0.4s ease;}
+.message .meta{font-size:12px;color:var(--muted);margin-bottom:6px;transition:all 0.4s ease;}
+.message .text{font-size:15px;line-height:1.3;color:#ecfeff;transition:all 0.4s ease;}
+.enter-anim{animation:floatIn 900ms cubic-bezier(.2,.9,.3,1) forwards}
+@keyframes floatIn{0%{opacity:0;transform:translateX(-50%) translateY(30px) scale(0.98)}60%{opacity:1;transform:translateX(-50%) translateY(-14px) scale(1.02)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+input,textarea{flex:1;resize:vertical;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:white;font-size:14px;margin:4px 0;}
+button.send-btn{background:var(--accent);border:0;padding:10px 14px;border-radius:8px;color:#042027;font-weight:600;cursor:pointer;margin:4px 0;}
+</style>
+</head>
+<body>
+<div class="app">
+<h2>Public Board</h2>
+<div class="feed" id="feed-public"></div>
+<input id="name-public" type="text" placeholder="ชื่อ (ไม่บังคับ)">
+<textarea id="txt-public" placeholder="พิมพ์ข้อความ..."></textarea>
+<button id="send-public" class="send-btn">ส่ง</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA5DOlMXP9IedzosXcFls3kvbvdKyQGjGk",
+  authDomain: "project-901413547666359240.firebaseapp.com",
+  databaseURL: "https://project-901413547666359240-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  projectId: "project-901413547666359240",
+  storageBucket: "project-901413547666359240.firebasestorage.app",
+  messagingSenderId: "321646066089",
+  appId: "1:321646066089:web:9f565ce9ca38d5516c6cb8",
+  measurementId: "G-8SQYEJ2MHD"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const msgRef = ref(db,"messages");
+
+const feedPublic = document.getElementById('feed-public');
+const txtPublic = document.getElementById('txt-public');
+const namePublic = document.getElementById('name-public');
+const sendPublic = document.getElementById('send-public');
+
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+function renderMessages(messages, feed){
+  feed.innerHTML='';
+  const max = messages.length;
+  messages.forEach((m,i)=>{
+    const el=document.createElement('div');
+    el.className='message enter-anim';
+    el.style.top=(i*72+8)+'px';
+    const factor=(max-i)/max;
+    const bgAlpha=0.03+0.07*factor;
+    const textOpacity=0.5+0.5*factor;
+    el.style.background=`rgba(255,255,255,${bgAlpha})`;
+    el.innerHTML=`<div class="meta" style="opacity:${textOpacity}">${escapeHtml(m.name||'Anonymous')} • ${new Date(m.t).toLocaleString()}</div>
+                  <div class="text" style="opacity:${textOpacity}">${escapeHtml(m.text)}</div>`;
+    feed.appendChild(el);
+  });
+}
+
+onValue(msgRef, snapshot=>{
+  const data = snapshot.val();
+  const messages = data ? Object.keys(data).map(k=>({key:k,...data[k]})).sort((a,b)=>b.t-a.t) : [];
+  renderMessages(messages, feedPublic);
+});
+
+sendPublic.addEventListener('click', ()=>{
+  const v=txtPublic.value.trim();
+  if(!v) return txtPublic.focus();
+  const n=namePublic.value.trim()||'Anonymous';
+  push(msgRef,{name:n,text:v,t:Date.now(),device:navigator.userAgent});
+  txtPublic.value='';
+});
+</script>
+</body>
+</html>
