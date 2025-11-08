@@ -20,11 +20,11 @@ button.send-btn{background:var(--accent);border:0;padding:10px 14px;border-radiu
 </head>
 <body>
 <div class="app">
-<h2>Public Board</h2>
-<div class="feed" id="feed-public"></div>
-<input id="name-public" type="text" placeholder="ชื่อ (ไม่บังคับ)">
-<textarea id="txt-public" placeholder="พิมพ์ข้อความ..."></textarea>
-<button id="send-public" class="send-btn">ส่ง</button>
+  <h2>Public Board</h2>
+  <div class="feed" id="feed"></div>
+  <input id="name" type="text" placeholder="ชื่อ (ไม่บังคับ)">
+  <textarea id="txt" placeholder="พิมพ์ข้อความ..."></textarea>
+  <button id="send" class="send-btn">ส่ง</button>
 </div>
 
 <script type="module">
@@ -41,18 +41,29 @@ const firebaseConfig = {
   appId: "1:321646066089:web:9f565ce9ca38d5516c6cb8",
   measurementId: "G-8SQYEJ2MHD"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const msgRef = ref(db,"messages");
+const blockRef = ref(db,"blocked");
 
-const feedPublic = document.getElementById('feed-public');
-const txtPublic = document.getElementById('txt-public');
-const namePublic = document.getElementById('name-public');
-const sendPublic = document.getElementById('send-public');
+const feed = document.getElementById('feed');
+const txt = document.getElementById('txt');
+const nameInput = document.getElementById('name');
+
+let blockedUsers = [];
 
 function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
-function renderMessages(messages, feed){
+onValue(blockRef,snap=>{
+  const data = snap.val();
+  blockedUsers = data ? Object.values(data) : [];
+});
+
+onValue(msgRef, snapshot=>{
+  const data = snapshot.val();
+  let messages = data ? Object.keys(data).map(k=>({key:k,...data[k]})).sort((a,b)=>b.t-a.t) : [];
+  messages = messages.filter(m=>!blockedUsers.includes(m.name));
   feed.innerHTML='';
   const max = messages.length;
   messages.forEach((m,i)=>{
@@ -67,20 +78,15 @@ function renderMessages(messages, feed){
                   <div class="text" style="opacity:${textOpacity}">${escapeHtml(m.text)}</div>`;
     feed.appendChild(el);
   });
-}
-
-onValue(msgRef, snapshot=>{
-  const data = snapshot.val();
-  const messages = data ? Object.keys(data).map(k=>({key:k,...data[k]})).sort((a,b)=>b.t-a.t) : [];
-  renderMessages(messages, feedPublic);
 });
 
-sendPublic.addEventListener('click', ()=>{
-  const v=txtPublic.value.trim();
-  if(!v) return txtPublic.focus();
-  const n=namePublic.value.trim()||'Anonymous';
+document.getElementById('send').addEventListener('click', ()=>{
+  const v = txt.value.trim();
+  if(!v) return txt.focus();
+  const n = nameInput.value.trim()||'Anonymous';
+  if(blockedUsers.includes(n)){ alert("ผู้ใช้ถูกบล็อกไม่สามารถโพสต์ได้"); return; }
   push(msgRef,{name:n,text:v,t:Date.now(),device:navigator.userAgent});
-  txtPublic.value='';
+  txt.value='';
 });
 </script>
 </body>
